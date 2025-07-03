@@ -1,14 +1,20 @@
 // deno-lint-ignore-file no-explicit-any
 import type {
+  ActionsOrFn,
   BindableContext,
+  ChooseFn,
+  ComputedFn,
+  EffectsOrFn,
+  GuardFn,
   Machine,
   MachineSchema,
   PropFn,
   Service,
 } from "@zag-js/core";
 import { createScope } from "@zag-js/core";
-import { compact } from "@zag-js/utils";
+import { compact, isFunction, isString, toArray, warn } from "@zag-js/utils";
 import { bindable } from "./bindable.ts";
+import { createRefs } from "./refs.ts";
 
 export function useMachine<T extends MachineSchema>(
   machine: Machine<T>,
@@ -82,19 +88,84 @@ export function useMachine<T extends MachineSchema>(
       !!machine.states[state.get() as T["state"]]?.tags?.includes(tag),
   });
 
-  const refs;
+  const refs = createRefs(machine.refs?.({ prop, context: ctx }) ?? {});
 
-  const getParams;
+  const getParams = () => ({
+    state: getState(),
+    context: ctx,
+    event: getEvent(),
+    prop,
+    send,
+    action,
+    guard,
+    track,
+    refs,
+    computed,
+    flush,
+    scope,
+    choose,
+  });
 
-  const action;
+  const action = (keys: ActionsOrFn<T> | undefined) => {
+    const strs = isFunction(keys) ? keys(getParams()) : keys;
+    if (!strs) return;
+    const fns = strs.map((s) => {
+      const fn = machine.implementations?.actions?.[s];
+      if (!fn) {
+        warn(
+          `[zag-js] No implementation found for action "${JSON.stringify(s)}"`,
+        );
+      }
+      return fn;
+    });
+    for (const fn of fns) {
+      fn?.(getParams());
+    }
+  };
 
-  const guard;
+  const guard = (str: T["guard"] | GuardFn<T>) => {
+    if (isFunction(str)) return str(getParams());
+    return machine.implementations?.guards?.[str](getParams());
+  };
 
-  const effect;
+  const effect = (keys: EffectsOrFn<T> | undefined) => {
+    const strs = isFunction(keys) ? keys(getParams()) : keys;
+    if (!strs) return;
+    const fns = strs.map((s) => {
+      const fn = machine.implementations?.effects?.[s];
+      if (!fn) {
+        warn(
+          `[zag-js] No implementation found for effect "${JSON.stringify(s)}"`,
+        );
+      }
+      return fn;
+    });
+    const cleanups: VoidFunction[] = [];
+    for (const fn of fns) {
+      const cleanup = fn?.(getParams());
+      if (cleanup) cleanups.push(cleanup);
+    }
+    return () => cleanups.forEach((fn) => fn?.());
+  };
 
-  const choose;
+  const choose: ChooseFn<T> = (transitions) => {
+    return toArray(transitions).find((t) => {
+      let result = !t.guard;
+      if (isString(t.guard)) result = !!guard(t.guard);
+      else if (isFunction(t.guard)) result = t.guard(getParams());
+      return result;
+    });
+  };
 
-  const computed;
+  const computed: ComputedFn<T> = (key) =>
+    machine.computed?.[key]({
+      context: ctx,
+      event: getEvent(),
+      prop,
+      refs,
+      scope,
+      computed,
+    }) ?? ({} as any);
 
   const state;
 
