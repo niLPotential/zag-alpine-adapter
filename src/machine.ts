@@ -11,7 +11,7 @@ import type {
   PropFn,
   Service,
 } from "@zag-js/core";
-import { createScope } from "@zag-js/core";
+import { createScope, INIT_STATE, MachineStatus } from "@zag-js/core";
 import { compact, isFunction, isString, toArray, warn } from "@zag-js/utils";
 import { bindable } from "./bindable.ts";
 import { createRefs } from "./refs.ts";
@@ -71,9 +71,9 @@ export function useMachine<T extends MachineSchema>(
   };
 
   const effects = new Map<string, VoidFunction>();
-  const transition: any = null;
-  const event: any = { type: "" };
-  const previousEvent: any;
+  let transition: any = null;
+  let event: any = { type: "" };
+  let previousEvent: any;
 
   const getEvent = () => ({
     ...event,
@@ -167,7 +167,83 @@ export function useMachine<T extends MachineSchema>(
       computed,
     }) ?? ({} as any);
 
-  const state;
+  const state = bindable(() => ({
+    defaultValue: machine.initialState({ prop }),
+    onChange(nextState, prevState) {
+      // compute effects: exit -> transition -> enter
+
+      // exit effects
+      if (prevState) {
+        const exitEffects = effects.get(prevState);
+        exitEffects?.();
+        effects.delete(prevState);
+      }
+
+      // exit actions
+      if (prevState) {
+        action(machine.states[prevState]?.exit);
+      }
+
+      // transition actions
+      action(transition?.actions);
+
+      // enter effect
+      const cleanup = effect(machine.states[nextState]?.effects);
+      if (cleanup) effects.set(nextState as string, cleanup);
+
+      // root entry actions
+      if (prevState === INIT_STATE) {
+        action(machine.entry);
+        const cleanup = effect(machine.effects);
+        if (cleanup) effects.set(INIT_STATE, cleanup);
+      }
+
+      // enter actions
+      action(machine.states[nextState]?.entry);
+    },
+  }));
+
+  let status = MachineStatus.NotStarted;
+
+  const send = (__event: any) => {
+    if (status !== MachineStatus.Started) return;
+
+    previousEvent = event;
+    event = __event;
+
+    debug("send", event);
+
+    let currentState = state.get();
+
+    const transitions =
+      // @ts-ignore event type
+      machine.states[currentState].on?.[event.type] ??
+        // @ts-ignore event type
+        machine.on?.[event.type];
+
+    const __transition = choose(transitions);
+    if (!__transition) return;
+
+    // save current transition
+    transition = __transition;
+    const target = transition.target ?? currentState;
+
+    debug("transition", transition);
+
+    const changed = target !== currentState;
+    if (changed) {
+      // state change is high priority
+      state.set(target);
+    } else if (transition.reenter && !changed) {
+      // reenter will re-invoke the current state
+      state.invoke(currentState, currentState);
+    } else {
+      // call transition actions
+      action(transition.actions);
+    }
+  };
+
+  machine.watch?.(getParams());
 
   return {
     state: getState(),
