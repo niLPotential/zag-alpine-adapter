@@ -4,6 +4,7 @@
     "npm:@zag-js/checkbox@^1.18.1": "1.18.1",
     "npm:@zag-js/core@^1.18.1": "1.18.1",
     "npm:@zag-js/types@^1.18.1": "1.18.1",
+    "npm:@zag-js/utils@^1.18.1": "1.18.1",
     "npm:alpinejs@^3.14.9": "3.14.9",
     "npm:vite@7.0.1": "7.0.1_picomatch@4.0.2",
     "npm:vite@^7.0.1": "7.0.1_picomatch@4.0.2"
@@ -420,7 +421,8 @@
   "workspace": {
     "dependencies": [
       "npm:@zag-js/core@^1.18.1",
-      "npm:@zag-js/types@^1.18.1"
+      "npm:@zag-js/types@^1.18.1",
+      "npm:@zag-js/utils@^1.18.1"
     ],
     "members": {
       "example": {
