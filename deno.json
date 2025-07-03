@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@zag-js/core": "npm:@zag-js/core@^1.18.1",
+    "@zag-js/types": "npm:@zag-js/types@^1.18.1"
+  }
+}
