@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@zag-js/checkbox@^1.18.1": "1.18.1",
     "npm:@zag-js/core@^1.18.1": "1.18.1",
     "npm:@zag-js/types@^1.18.1": "1.18.1",
     "npm:alpinejs@^3.14.9": "3.14.9",
@@ -245,6 +246,20 @@
     "@vue/shared@3.1.5": {
       "integrity": "sha512-oJ4F3TnvpXaQwZJNF3ZK+kLPHKarDmJjJ6jyzVNDKH9md1dptjC7lWR//jrGuLdek/U6iltWxqAnYOu8gCiOvA=="
     },
+    "@zag-js/anatomy@1.18.1": {
+      "integrity": "sha512-qrIca7xuLCGEDe08pxmpVPNdUqD9T+X7WlEo45RK3h2KB/Exd/966AJoU4YDjTOliZ7vn8woxZp1ZnYG12NyQQ=="
+    },
+    "@zag-js/checkbox@1.18.1": {
+      "integrity": "sha512-tbbp0Vec/ZPNDnNrvg7lu8LAoR+GR96BOHoi1kn0EtOHKHIMFKORJhN9ZW10xQDbPk5ClaHModETqJ+guD02TQ==",
+      "dependencies": [
+        "@zag-js/anatomy",
+        "@zag-js/core",
+        "@zag-js/dom-query",
+        "@zag-js/focus-visible",
+        "@zag-js/types",
+        "@zag-js/utils"
+      ]
+    },
     "@zag-js/core@1.18.1": {
       "integrity": "sha512-xR7eHPj5TrQgXJ1ZyyN1mj9fA7leurcGNadIkw6ayREWkRWL/wXr4XKafboFDh360pa/oKRopjEcqvWdoHVBPg==",
       "dependencies": [
@@ -256,6 +271,12 @@
       "integrity": "sha512-64c/TbM3wLPTx1NP1EPOLTvVlcbA4yWCX8xtSQTUHJE1oXS6Gyi3xY0M3C02+COiEF2jWy331yUxa/xLOk+0CQ==",
       "dependencies": [
         "@zag-js/types"
+      ]
+    },
+    "@zag-js/focus-visible@1.18.1": {
+      "integrity": "sha512-J7SEXjjgSvIGgXO3sHfWI0P2fo0TTTlEPW8QY/0AK4k1WIp34pFFBxIJyRZcJnEW32+XbRbKe58ROEwgLBpwqQ==",
+      "dependencies": [
+        "@zag-js/dom-query"
       ]
     },
     "@zag-js/types@1.18.1": {
@@ -404,6 +425,7 @@
     "members": {
       "example": {
         "dependencies": [
+          "npm:@zag-js/checkbox@^1.18.1",
           "npm:alpinejs@^3.14.9",
           "npm:vite@^7.0.1"
         ]

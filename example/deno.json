@@ -3,6 +3,7 @@
     "dev": "vite"
   },
   "imports": {
+    "@zag-js/checkbox": "npm:@zag-js/checkbox@^1.18.1",
     "alpinejs": "npm:alpinejs@^3.14.9",
     "vite": "npm:vite@^7.0.1"
   }

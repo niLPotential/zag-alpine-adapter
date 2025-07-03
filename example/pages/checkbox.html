@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkbox</title>
+  </head>
+  <body style="padding: 40px">
+    <h1>Checkbox</h1>
+
+    <form>
+      <fieldset>
+        <label x-data="checkbox">
+          <div x-bind="api.getControlProps()"></div>
+          <span x-bind="api.getLabelProps()">Checkbox Label</span>
+          <input x-bind="api.getHiddenInputProps()" type="checkbox" />
+        </label>
+      </fieldset>
+    </form>
+
+    <script type="module" src="./checkbox.ts"></script>
+  </body>
+</html>
