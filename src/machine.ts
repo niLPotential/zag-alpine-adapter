@@ -12,7 +12,14 @@ import type {
   Service,
 } from "@zag-js/core";
 import { createScope, INIT_STATE, MachineStatus } from "@zag-js/core";
-import { compact, isFunction, isString, toArray, warn } from "@zag-js/utils";
+import {
+  compact,
+  identity,
+  isFunction,
+  isString,
+  toArray,
+  warn,
+} from "@zag-js/utils";
 import { bindable } from "./bindable.ts";
 import { createRefs } from "./refs.ts";
 
@@ -90,6 +97,8 @@ export function useMachine<T extends MachineSchema>(
 
   const refs = createRefs(machine.refs?.({ prop, context: ctx }) ?? {});
 
+  const trackers: { deps: any[]; fn: any }[] = [];
+
   const getParams = () => ({
     state: getState(),
     context: ctx,
@@ -98,10 +107,13 @@ export function useMachine<T extends MachineSchema>(
     send,
     action,
     guard,
-    track,
+    track: (deps: any[], fn: any) => {
+      fn.prev = deps.map((dep) => dep());
+      trackers.push({ deps, fn });
+    },
     refs,
     computed,
-    flush,
+    flush: identity,
     scope,
     choose,
   });
