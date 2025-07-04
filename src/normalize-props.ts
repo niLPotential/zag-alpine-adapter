@@ -1,16 +1,15 @@
 import { createNormalizer } from "@zag-js/types";
 
-function toAlpineProp(prop: string) {
-  if (prop.startsWith("on")) return `@${prop.substr(2)}`;
-  return prop;
-}
+type Dict = Record<string, string>;
 
-export const normalizeProps = createNormalizer((props: any) => {
-  return Object.entries(props).reduce<any>((acc, [key, value]) => {
-    if (value === undefined) return acc;
-
-    acc[toAlpineProp(key)] = value;
-
-    return acc;
-  }, {});
+export const normalizeProps = createNormalizer((props: Dict) => {
+  const normalized: Dict = {};
+  for (let key in props) {
+    if (key.startsWith("on")) {
+      console.log(key, props[key])
+      continue;
+    }
+    normalized[key] = props[key];
+  }
+  return normalized;
 });
