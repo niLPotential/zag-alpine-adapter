@@ -1,13 +1,17 @@
 import Alpine from "alpinejs";
 import * as checkbox from "@zag-js/checkbox";
-import { normalizeProps, useMachine } from "../../src/mod.ts";
+import { normalizeProps, VanillaMachine } from "../../src/mod.ts";
 
+// @ts-ignore
 window.Alpine = Alpine;
 
 Alpine.data("checkbox", () => {
-  const service = useMachine(checkbox.machine);
+  const machine = new VanillaMachine(checkbox.machine);
   return {
-    api: checkbox.connect(service, normalizeProps),
+    init() {
+      machine.start();
+    },
+    api: checkbox.connect(machine.service, normalizeProps),
   };
 });
 
