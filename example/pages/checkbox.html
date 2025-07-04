@@ -10,7 +10,7 @@
 
     <form>
       <fieldset>
-        <label x-data="checkbox">
+        <label x-data="checkbox" x-bind="api.getRootProps()">
           <div x-bind="api.getControlProps()"></div>
           <span x-bind="api.getLabelProps()">Checkbox Label</span>
           <input x-bind="api.getHiddenInputProps()" type="checkbox" />
