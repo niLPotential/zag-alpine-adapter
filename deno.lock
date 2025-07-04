@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@zag-js/accordion@^1.18.1": "1.18.1",
     "npm:@zag-js/checkbox@^1.18.1": "1.18.1",
     "npm:@zag-js/core@^1.18.1": "1.18.1",
     "npm:@zag-js/store@^1.18.1": "1.18.1",
@@ -248,6 +249,16 @@
     "@vue/shared@3.1.5": {
       "integrity": "sha512-oJ4F3TnvpXaQwZJNF3ZK+kLPHKarDmJjJ6jyzVNDKH9md1dptjC7lWR//jrGuLdek/U6iltWxqAnYOu8gCiOvA=="
     },
+    "@zag-js/accordion@1.18.1": {
+      "integrity": "sha512-s7lmzzI5Vw6S2lAM4fcI/Kp9OztvUi8HNYNd9v1S7SE3w4PplzT1b5Lf6+XI7vvgU+xdQWwngFAS3a8lS9+QFw==",
+      "dependencies": [
+        "@zag-js/anatomy",
+        "@zag-js/core",
+        "@zag-js/dom-query",
+        "@zag-js/types",
+        "@zag-js/utils"
+      ]
+    },
     "@zag-js/anatomy@1.18.1": {
       "integrity": "sha512-qrIca7xuLCGEDe08pxmpVPNdUqD9T+X7WlEo45RK3h2KB/Exd/966AJoU4YDjTOliZ7vn8woxZp1ZnYG12NyQQ=="
     },
@@ -438,6 +449,7 @@
     "members": {
       "example": {
         "dependencies": [
+          "npm:@zag-js/accordion@^1.18.1",
           "npm:@zag-js/checkbox@^1.18.1",
           "npm:alpinejs@^3.14.9",
           "npm:vite@^7.0.1"

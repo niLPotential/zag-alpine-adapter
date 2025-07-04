@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + TS</title>
+  </head>
+  <body style="padding: 40px">
+    <h1>Accordion</h1>
+
+    <div x-data="accordion" x-bind="api.getRootProps()">
+      <div x-data="{ value: 'a' }" x-bind="api.getItemProps({ value })">
+        <button x-bind="api.getItemTriggerProps({ value })">
+          First Button
+        </button>
+        <div x-bind="api.getItemContentProps({ value })">
+          First Content
+        </div>
+      </div>
+
+      <div x-data="{ value: 'b' }" x-bind="api.getItemProps({ value })">
+        <button x-bind="api.getItemTriggerProps({ value })">
+          Second Button
+        </button>
+        <div x-bind="api.getItemContentProps({ value })">
+          Second Content
+        </div>
+      </div>
+
+      <div x-data="{ value: 'c' }" x-bind="api.getItemProps({ value })">
+        <button x-bind="api.getItemTriggerProps({ value })">
+          Third Button
+        </button>
+        <div x-bind="api.getItemContentProps({ value })">
+          Third Content
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./accordion.ts"></script>
+  </body>
+</html>
