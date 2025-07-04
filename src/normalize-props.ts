@@ -5,11 +5,13 @@ type Dict = Record<string, string>;
 export const normalizeProps = createNormalizer((props: Dict) => {
   const normalized: Dict = {};
   for (let key in props) {
+    let value = props[key];
+    if (value === undefined) continue;
     if (key.startsWith("on")) {
-      console.log(key, props[key])
-      continue;
+      value = value.toString().replace(key, "");
+      key = `[@${key.substring(2).toLowerCase()}]`;
     }
-    normalized[key] = props[key];
+    normalized[key] = value;
   }
   return normalized;
 });
