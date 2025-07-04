@@ -4,8 +4,15 @@ import { isFunction } from "@zag-js/utils";
 
 export function bindable<T>(props: () => BindableParams<T>): Bindable<T> {
   const initial = props().value ?? props().defaultValue;
+
+  if (props().debug) {
+    console.log(`[bindable > ${props().debug}] initial`, initial);
+  }
+
   const eq = props().isEqual ?? Object.is;
+
   const store = proxy({ value: initial as T });
+
   const controlled = () => props().value !== undefined;
 
   return {
