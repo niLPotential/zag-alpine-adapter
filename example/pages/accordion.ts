@@ -7,11 +7,12 @@ window.Alpine = Alpine;
 
 Alpine.data("accordion", () => {
   const machine = new VanillaMachine(accordion.machine);
+  const api = accordion.connect(machine.service, normalizeProps);
   return {
     init() {
       machine.start();
     },
-    api: accordion.connect(machine.service, normalizeProps),
+    api: api.toString(),
   };
 });
 
