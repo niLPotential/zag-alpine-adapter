@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any ban-ts-comment
 import type {
   ActionsOrFn,
   Bindable,
@@ -26,8 +27,8 @@ import {
   toArray,
   warn,
 } from "@zag-js/utils";
-import { bindable } from "./bindable";
-import { createRefs } from "./refs";
+import { bindable } from "./bindable.ts";
+import { createRefs } from "./refs.ts";
 
 export class VanillaMachine<T extends MachineSchema> {
   scope: Scope;
@@ -204,7 +205,7 @@ export class VanillaMachine<T extends MachineSchema> {
 
       this.debug("send", event);
 
-      let currentState = this.state.get();
+      const currentState = this.state.get();
 
       const transitions =
         // @ts-ignore
