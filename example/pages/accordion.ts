@@ -5,17 +5,22 @@ import { normalizeProps, VanillaMachine } from "../../src/mod.ts";
 // @ts-ignore
 window.Alpine = Alpine;
 
-Alpine.data("accordion", () => {
-  const machine = new VanillaMachine(accordion.machine, {
-    id: "1",
-    dir: "ltr",
-  });
-  return {
-    init() {
-      machine.start();
-    },
-    api: accordion.connect(machine.service, normalizeProps),
-  };
-});
+class Accordion {
+  machine: any;
+  api: any;
+  constructor() {
+    this.machine = new VanillaMachine(accordion.machine, {
+      id: "1",
+      dir: "ltr",
+    });
+    this.machine.machine.debug = true;
+    this.api = accordion.connect(this.machine.service, normalizeProps);
+  }
+  init() {
+    this.machine.start();
+  }
+}
+
+Alpine.data("accordion", () => new Accordion());
 
 Alpine.start();
