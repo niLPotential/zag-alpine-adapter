@@ -2,9 +2,9 @@
   "nodeModulesDir": "auto",
   "workspace": ["./example"],
   "imports": {
-    "@zag-js/core": "npm:@zag-js/core@^1.18.1",
-    "@zag-js/store": "npm:@zag-js/store@^1.18.1",
-    "@zag-js/types": "npm:@zag-js/types@^1.18.1",
-    "@zag-js/utils": "npm:@zag-js/utils@^1.18.1"
+    "@zag-js/core": "npm:@zag-js/core@^1.18.2",
+    "@zag-js/store": "npm:@zag-js/store@^1.18.2",
+    "@zag-js/types": "npm:@zag-js/types@^1.18.2",
+    "@zag-js/utils": "npm:@zag-js/utils@^1.18.2"
   }
 }
