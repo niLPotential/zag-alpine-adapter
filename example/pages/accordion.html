@@ -9,8 +9,9 @@
     <h1>Accordion</h1>
 
     <div x-data="accordion" x-bind="api.getRootProps()">
-      <div x-text="machine.ctx.get('value').length"></div>
-      <button @click="console.log(machine.ctx.get('value'), api.value)">click</button>
+      <div x-text="api.value"></div>
+      <button @click="connect">connect</button>
+      <button @click="console.log(machine.ctx.get('value'), machine.service.context.get('value'),api.value)">click</button>
       <div x-data="{ value: 'a' }" x-bind="api.getItemProps({ value })">
         <button x-bind="api.getItemTriggerProps({ value })">
           First Button

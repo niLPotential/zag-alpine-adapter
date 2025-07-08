@@ -13,11 +13,13 @@ class Accordion {
       id: "1",
       dir: "ltr",
     });
-    this.machine.machine.debug = true;
     this.api = accordion.connect(this.machine.service, normalizeProps);
   }
   init() {
     this.machine.start();
+  }
+  connect() {
+    this.api = accordion.connect(this.machine.service, normalizeProps);
   }
 }
 
