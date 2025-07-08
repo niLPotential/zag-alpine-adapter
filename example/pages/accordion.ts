@@ -16,10 +16,10 @@ class Accordion {
     this.api = accordion.connect(this.machine.service, normalizeProps);
   }
   init() {
+    this.machine.subscribe(() => {
+      this.api = accordion.connect(this.machine.service, normalizeProps);
+    });
     this.machine.start();
-  }
-  connect() {
-    this.api = accordion.connect(this.machine.service, normalizeProps);
   }
 }
 
