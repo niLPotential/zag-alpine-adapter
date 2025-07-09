@@ -9,8 +9,8 @@ export const normalizeProps = createNormalizer((props) => {
       key = `@${key.substring(2).toLowerCase()}`;
     }
     if (key === "hidden") {
-      normalized[":hidden"] = () => value
-      continue
+      normalized[":hidden"] = () => value;
+      continue;
     }
     normalized[key] = value;
   }
