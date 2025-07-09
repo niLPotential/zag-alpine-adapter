@@ -9,11 +9,7 @@
     <h1>Accordion</h1>
 
     <div x-data="accordion" x-bind="api.getRootProps()">
-      <div
-        x-data="{ value: 'a', ...item({value: this.value}) }"
-        x-bind="item({value})"
-        x-effect="console.log(item({value}))"
-      >
+      <div x-data="{ value: 'a' }" x-bind="api.getItemProps({ value })">
         <button x-bind="api.getItemTriggerProps({ value })">
           First Button
         </button>
