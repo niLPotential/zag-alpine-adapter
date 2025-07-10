@@ -11,6 +11,7 @@ import type {
   MachineSchema,
   Params,
   PropFn,
+  Service,
 } from "@zag-js/core";
 import { createScope, INIT_STATE, MachineStatus } from "@zag-js/core";
 import {
@@ -25,15 +26,28 @@ import {
 import { bindable } from "./bindable.ts";
 import { createRefs } from "./refs.ts";
 
-export class AlpineService<T extends MachineSchema> {
+export class AlpineService<T extends MachineSchema> implements Service<T> {
+  get state() {
+    return this.getState();
+  }
+  get context() {
+    return this.ctx;
+  }
+  get event() {
+    return this.getEvent();
+  }
+  getStatus() {
+    return this.status;
+  }
+
   private ctx: BindableContext<T>;
-  private refs: BindableRefs<T>;
+  refs: BindableRefs<T>;
 
   private effects = new Map<string, VoidFunction>();
   private transition: any = null;
 
   private previousEvent: any;
-  private event = { type: "" };
+  private _event = { type: "" };
 
   constructor(
     private machine: Machine<T>,
@@ -72,7 +86,7 @@ export class AlpineService<T extends MachineSchema> {
     );
   }
 
-  private get scope() {
+  get scope() {
     const { id, ids, getRootNode } = this.userProps as any;
     return createScope({ id, ids, getRootNode });
   }
@@ -87,19 +101,19 @@ export class AlpineService<T extends MachineSchema> {
       scope: this.scope,
     }) ?? this.userProps;
   }
-  private prop: PropFn<T> = (key) => this.props[key] as any;
+  prop: PropFn<T> = (key) => this.props[key] as any;
 
   private getEvent = () => ({
-    ...this.event,
-    current: () => this.event,
+    ...this._event,
+    current: () => this._event,
     previous: () => this.previousEvent,
   });
 
   private getState = () => ({
-    ...this.state,
-    matches: (...values: T["state"][]) => values.includes(this.state.get()),
+    ...this._state,
+    matches: (...values: T["state"][]) => values.includes(this._state.get()),
     hasTag: (tag: T["tag"]) =>
-      !!this.machine.states[this.state.get() as T["state"]]?.tags?.includes(
+      !!this.machine.states[this._state.get() as T["state"]]?.tags?.includes(
         tag,
       ),
   });
@@ -169,7 +183,7 @@ export class AlpineService<T extends MachineSchema> {
       return result;
     });
 
-  private computed: ComputedFn<T> = (key) => {
+  computed: ComputedFn<T> = (key) => {
     ensure(
       this.machine.computed,
       () => `[zag-js] No computed object found on machine`,
@@ -185,7 +199,7 @@ export class AlpineService<T extends MachineSchema> {
     });
   };
 
-  private state = bindable(() => ({
+  private _state = bindable(() => ({
     defaultValue: this.machine.initialState({ prop: this.prop }),
     onChange: (nextState, prevState) => {
       // compute effects: exit -> transition -> enter
@@ -223,22 +237,22 @@ export class AlpineService<T extends MachineSchema> {
 
   private status = MachineStatus.NotStarted;
 
-  private init() {
+  init() {
     this.status = MachineStatus.Started;
     this.debug("initializing...");
-    this.state.invoke(this.state.initial!, INIT_STATE);
+    this._state.invoke(this._state.initial!, INIT_STATE);
     this.machine.watch?.(this.getParams());
   }
 
-  private send(event: any) {
+  send(event: any) {
     if (this.status !== MachineStatus.Started) return;
 
-    this.previousEvent = this.event;
-    this.event = event;
+    this.previousEvent = this._event;
+    this._event = event;
 
     this.debug("send", event);
 
-    const currentState = this.state.get();
+    const currentState = this._state.get();
 
     const transitions =
       // @ts-ignore
@@ -258,10 +272,10 @@ export class AlpineService<T extends MachineSchema> {
     const changed = target !== currentState;
     if (changed) {
       // state change is high priority
-      this.state.set(target);
+      this._state.set(target);
     } else if (transition.reenter && !changed) {
       // reenter will re-invoke the current state
-      this.state.invoke(currentState, currentState);
+      this._state.invoke(currentState, currentState);
     } else {
       // call transition actions
       this.action(transition.actions);
