@@ -6,14 +6,16 @@ import { AlpineService, normalizeProps } from "../../src/mod.ts";
 window.Alpine = Alpine;
 
 class Accordion {
-  service: accordion.Service;
+  service: accordion.Service & { init: VoidFunction };
   api: accordion.Api;
+  init: VoidFunction;
   constructor() {
     this.service = new AlpineService(accordion.machine, {
       id: "1",
       dir: "ltr",
     });
     this.api = accordion.connect(this.service, normalizeProps);
+    this.init = this.service.init;
   }
 }
 
