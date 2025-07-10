@@ -1,25 +1,19 @@
 import Alpine from "alpinejs";
 import * as accordion from "@zag-js/accordion";
-import { normalizeProps, VanillaMachine } from "../../src/mod.ts";
+import { AlpineService, normalizeProps } from "../../src/mod.ts";
 
 // @ts-ignore
 window.Alpine = Alpine;
 
 class Accordion {
-  machine: any;
-  api: any;
+  service: accordion.Service;
+  api: accordion.Api;
   constructor() {
-    this.machine = new VanillaMachine(accordion.machine, {
+    this.service = new AlpineService(accordion.machine, {
       id: "1",
       dir: "ltr",
     });
-    this.api = accordion.connect(this.machine.service, normalizeProps);
-  }
-  init() {
-    this.machine.subscribe(() => {
-      this.api = accordion.connect(this.machine.service, normalizeProps);
-    });
-    this.machine.start();
+    this.api = accordion.connect(this.service, normalizeProps);
   }
 }
 
