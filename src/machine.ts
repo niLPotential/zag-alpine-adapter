@@ -177,6 +177,7 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     }
     return () => cleanups.forEach((fn) => fn?.());
   }
+
   private choose: ChooseFn<T> = (transitions) =>
     toArray(transitions).find((t) => {
       let result = !t.guard;
