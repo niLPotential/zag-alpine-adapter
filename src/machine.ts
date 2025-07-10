@@ -16,7 +16,6 @@ import { createScope, INIT_STATE, MachineStatus } from "@zag-js/core";
 import {
   compact,
   ensure,
-  ensure,
   identity,
   isFunction,
   isString,
@@ -29,69 +28,10 @@ import { createRefs } from "./refs.ts";
 export class AlpineService<T extends MachineSchema> {
   private ctx: BindableContext<T>;
   private refs: BindableRefs<T>;
-export class AlpineService<T extends MachineSchema> {
-  private ctx: BindableContext<T>;
-  private refs: BindableRefs<T>;
 
   private effects = new Map<string, VoidFunction>();
   private transition: any = null;
 
-  private previousEvent: any;
-  private event = { type: "" };
-
-  constructor(
-    private machine: Machine<T>,
-    private userProps: Partial<T["props"]>,
-  ) {
-    const context: any = this.machine.context?.({
-      prop: this.prop,
-      bindable,
-      scope: this.scope,
-      flush: identity,
-      getContext: () => this.ctx,
-      getComputed: () => this.computed,
-      getRefs: () => this.refs,
-      getEvent: this.getEvent.bind(this),
-    });
-
-    const ctx: BindableContext<T> = {
-      get(key) {
-        return context[key].get();
-      },
-      set(key, value) {
-        context[key].set(value);
-      },
-      initial(key) {
-        return context[key].initial;
-      },
-      hash(key) {
-        const current = context[key].get();
-        return context[key].hash(current);
-      },
-    };
-    this.ctx = ctx;
-
-    this.refs = createRefs(
-      this.machine.refs?.({ prop: this.prop, context: this.ctx }) ?? {},
-    );
-  }
-
-  private get scope() {
-    const { id, ids, getRootNode } = this.userProps as any;
-    return createScope({ id, ids, getRootNode });
-  }
-
-  private debug(...args: any[]) {
-    if (this.machine.debug) console.log(...args);
-  }
-
-  private get props() {
-    return this.machine.props?.({
-      props: compact(this.userProps),
-      scope: this.scope,
-    }) ?? this.userProps;
-  }
-  private prop: PropFn<T> = (key) => this.props[key] as any;
   private previousEvent: any;
   private event = { type: "" };
 
@@ -249,17 +189,7 @@ export class AlpineService<T extends MachineSchema> {
     defaultValue: this.machine.initialState({ prop: this.prop }),
     onChange: (nextState, prevState) => {
       // compute effects: exit -> transition -> enter
-  private state = bindable(() => ({
-    defaultValue: this.machine.initialState({ prop: this.prop }),
-    onChange: (nextState, prevState) => {
-      // compute effects: exit -> transition -> enter
 
-      // exit effects
-      if (prevState) {
-        const exitEffects = this.effects.get(prevState);
-        exitEffects?.();
-        this.effects.delete(prevState);
-      }
       // exit effects
       if (prevState) {
         const exitEffects = this.effects.get(prevState);
@@ -271,19 +201,10 @@ export class AlpineService<T extends MachineSchema> {
       if (prevState) {
         this.action(this.machine.states[prevState]?.exit);
       }
-      // exit actions
-      if (prevState) {
-        this.action(this.machine.states[prevState]?.exit);
-      }
 
       // transition actions
       this.action(this.transition?.actions);
-      // transition actions
-      this.action(this.transition?.actions);
 
-      // enter effect
-      const cleanup = this.effect(this.machine.states[nextState]?.effects);
-      if (cleanup) this.effects.set(nextState as string, cleanup);
       // enter effect
       const cleanup = this.effect(this.machine.states[nextState]?.effects);
       if (cleanup) this.effects.set(nextState as string, cleanup);
@@ -294,25 +215,7 @@ export class AlpineService<T extends MachineSchema> {
         const cleanup = this.effect(this.machine.effects);
         if (cleanup) this.effects.set(INIT_STATE, cleanup);
       }
-      // root entry actions
-      if (prevState === INIT_STATE) {
-        this.action(this.machine.entry);
-        const cleanup = this.effect(this.machine.effects);
-        if (cleanup) this.effects.set(INIT_STATE, cleanup);
-      }
 
-      // enter actions
-      this.action(this.machine.states[nextState]?.entry);
-    },
-  }));
-
-  private status = MachineStatus.NotStarted;
-
-  private init() {
-    this.status = MachineStatus.Started;
-    this.debug("initializing...");
-    this.state.invoke(this.state.initial!, INIT_STATE);
-    this.machine.watch?.(this.getParams());
       // enter actions
       this.action(this.machine.states[nextState]?.entry);
     },
@@ -327,26 +230,16 @@ export class AlpineService<T extends MachineSchema> {
     this.machine.watch?.(this.getParams());
   }
 
-  private send(event: any) {
   private send(event: any) {
     if (this.status !== MachineStatus.Started) return;
 
     this.previousEvent = this.event;
     this.event = event;
-    this.previousEvent = this.event;
-    this.event = event;
 
-    this.debug("send", event);
     this.debug("send", event);
 
     const currentState = this.state.get();
-    const currentState = this.state.get();
 
-    const transitions =
-      // @ts-ignore
-      this.machine.states[currentState].on?.[event.type] ??
-        // @ts-ignore
-        this.machine.on?.[event.type];
     const transitions =
       // @ts-ignore
       this.machine.states[currentState].on?.[event.type] ??
@@ -355,31 +248,13 @@ export class AlpineService<T extends MachineSchema> {
 
     const transition = this.choose(transitions);
     if (!transition) return;
-    const transition = this.choose(transitions);
-    if (!transition) return;
 
-    // save current transition
-    this.transition = transition;
-    const target = transition.target ?? currentState;
     // save current transition
     this.transition = transition;
     const target = transition.target ?? currentState;
 
     this.debug("transition", transition);
-    this.debug("transition", transition);
 
-    const changed = target !== currentState;
-    if (changed) {
-      // state change is high priority
-      this.state.set(target);
-    } else if (transition.reenter && !changed) {
-      // reenter will re-invoke the current state
-      this.state.invoke(currentState, currentState);
-    } else {
-      // call transition actions
-      this.action(transition.actions);
-    }
-  }
     const changed = target !== currentState;
     if (changed) {
       // state change is high priority
