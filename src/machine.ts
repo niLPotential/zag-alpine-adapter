@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any ban-ts-comment
 import type {
   ActionsOrFn,
-  Bindable,
   BindableContext,
   BindableRefs,
   ChooseFn,
@@ -12,40 +11,83 @@ import type {
   MachineSchema,
   Params,
   PropFn,
-  Scope,
-  Service,
 } from "@zag-js/core";
 import { createScope, INIT_STATE, MachineStatus } from "@zag-js/core";
-import { subscribe } from "@zag-js/store";
 import {
   compact,
+  ensure,
   identity,
-  isEqual,
   isFunction,
   isString,
-  runIfFn,
   toArray,
   warn,
 } from "@zag-js/utils";
 import { bindable } from "./bindable.ts";
 import { createRefs } from "./refs.ts";
 
-export class VanillaMachine<T extends MachineSchema> {
-  scope: Scope;
-  ctx: BindableContext<T>;
-  prop: PropFn<T>;
-  state: Bindable<T["state"]>;
-  refs: BindableRefs<T>;
-  computed: ComputedFn<T>;
-
-  private event: any = { type: "" };
-  private previousEvent: any;
+export class AlpineService<T extends MachineSchema> {
+  private ctx: BindableContext<T>;
+  private refs: BindableRefs<T>;
 
   private effects = new Map<string, VoidFunction>();
   private transition: any = null;
 
-  private cleanups: VoidFunction[] = [];
-  private subscriptions: Array<(service: Service<T>) => void> = [];
+  private previousEvent: any;
+  private event = { type: "" };
+
+  constructor(
+    private machine: Machine<T>,
+    private userProps: Partial<T["props"]>,
+  ) {
+    const context: any = this.machine.context?.({
+      prop: this.prop,
+      bindable,
+      scope: this.scope,
+      flush: identity,
+      getContext: () => this.ctx,
+      getComputed: () => this.computed,
+      getRefs: () => this.refs,
+      getEvent: this.getEvent.bind(this),
+    });
+
+    const ctx: BindableContext<T> = {
+      get(key) {
+        return context[key].get();
+      },
+      set(key, value) {
+        context[key].set(value);
+      },
+      initial(key) {
+        return context[key].initial;
+      },
+      hash(key) {
+        const current = context[key].get();
+        return context[key].hash(current);
+      },
+    };
+    this.ctx = ctx;
+
+    this.refs = createRefs(
+      this.machine.refs?.({ prop: this.prop, context: this.ctx }) ?? {},
+    );
+  }
+
+  private get scope() {
+    const { id, ids, getRootNode } = this.userProps as any;
+    return createScope({ id, ids, getRootNode });
+  }
+
+  private debug(...args: any[]) {
+    if (this.machine.debug) console.log(...args);
+  }
+
+  private get props() {
+    return this.machine.props?.({
+      props: compact(this.userProps),
+      scope: this.scope,
+    }) ?? this.userProps;
+  }
+  private prop: PropFn<T> = (key) => this.props[key] as any;
 
   private getEvent = () => ({
     ...this.event,
@@ -62,178 +104,23 @@ export class VanillaMachine<T extends MachineSchema> {
       ),
   });
 
-  debug = (...args: any[]) => {
-    if (this.machine.debug) console.log(...args);
-  };
+  private getParams = (): Params<T> => ({
+    state: this.getState(),
+    context: this.ctx,
+    event: this.getEvent(),
+    prop: this.prop,
+    send: this.send,
+    action: this.action,
+    guard: this.guard,
+    track: (deps: any[], effect: VoidFunction) => {},
+    refs: this.refs,
+    computed: this.computed,
+    flush: identity,
+    scope: this.scope,
+    choose: this.choose,
+  });
 
-  notify = () => {
-    this.publish();
-  };
-
-  constructor(
-    private machine: Machine<T>,
-    userProps: Partial<T["props"]> | (() => Partial<T["props"]>) = {},
-  ) {
-    // create scope
-    const { id, ids, getRootNode } = runIfFn(userProps) as any;
-    this.scope = createScope({ id, ids, getRootNode });
-
-    // create prop
-    const prop: PropFn<T> = (key) => {
-      const __props = runIfFn(userProps);
-      const props: any =
-        machine.props?.({ props: compact(__props), scope: this.scope }) ??
-          __props;
-      return props[key] as any;
-    };
-    this.prop = prop;
-
-    // create context
-    const context: any = machine.context?.({
-      prop,
-      bindable,
-      scope: this.scope,
-      flush(fn: VoidFunction) {
-        queueMicrotask(fn);
-      },
-      getContext() {
-        return ctx as any;
-      },
-      getComputed() {
-        return computed as any;
-      },
-      getRefs() {
-        return refs as any;
-      },
-      getEvent: this.getEvent.bind(this),
-    });
-
-    // subscribe to context changes
-    if (context) {
-      Object.values(context).forEach((item: any) => {
-        const unsub = subscribe(item.ref, () => this.notify());
-        this.cleanups.push(unsub);
-      });
-    }
-
-    // context function
-    const ctx: BindableContext<T> = {
-      get(key) {
-        return context?.[key].get();
-      },
-      set(key, value) {
-        context?.[key].set(value);
-      },
-      initial(key) {
-        return context?.[key].initial;
-      },
-      hash(key) {
-        const current = context?.[key].get();
-        return context?.[key].hash(current);
-      },
-    };
-    this.ctx = ctx;
-
-    const computed: ComputedFn<T> = (key) => {
-      return (
-        machine.computed?.[key]({
-          context: ctx as any,
-          event: this.getEvent(),
-          prop,
-          refs: this.refs,
-          scope: this.scope,
-          computed: computed as any,
-        }) ?? ({} as any)
-      );
-    };
-    this.computed = computed;
-
-    const refs: BindableRefs<T> = createRefs(
-      machine.refs?.({ prop, context: ctx }) ?? {},
-    );
-    this.refs = refs;
-
-    // state
-    const state = bindable(() => ({
-      defaultValue: machine.initialState({ prop }),
-      onChange: (nextState, prevState) => {
-        // compute effects: exit -> transition -> enter
-
-        // exit effects
-        if (prevState) {
-          const exitEffects = this.effects.get(prevState);
-          exitEffects?.();
-          this.effects.delete(prevState);
-        }
-
-        // exit actions
-        if (prevState) {
-          // @ts-ignore
-          this.action(machine.states[prevState]?.exit);
-        }
-
-        // transition actions
-        this.action(this.transition?.actions);
-
-        // enter effect
-        // @ts-ignore
-        const cleanup = this.effect(machine.states[nextState]?.effects);
-        if (cleanup) this.effects.set(nextState as string, cleanup);
-
-        // root entry actions
-        if (prevState === INIT_STATE) {
-          this.action(machine.entry);
-          const cleanup = this.effect(machine.effects);
-          if (cleanup) this.effects.set(INIT_STATE, cleanup);
-        }
-
-        // enter actions
-        // @ts-ignore
-        this.action(machine.states[nextState]?.entry);
-      },
-    }));
-    this.state = state;
-    this.cleanups.push(subscribe(this.state.ref, () => this.notify()));
-  }
-
-  send = (event: any) => {
-    if (this.status !== MachineStatus.Started) return;
-
-    queueMicrotask(() => {
-      this.previousEvent = this.event;
-      this.event = event;
-
-      this.debug("send", event);
-
-      const currentState = this.state.get();
-
-      const transitions =
-        // @ts-ignore
-        this.machine.states[currentState].on?.[event.type] ??
-          // @ts-ignore
-          this.machine.on?.[event.type];
-
-      const transition = this.choose(transitions);
-      if (!transition) return;
-
-      // save current transition
-      this.transition = transition;
-      const target = transition.target ?? currentState;
-
-      this.debug("transition", transition);
-
-      const changed = target !== currentState;
-      if (changed) {
-        // state change is high priority
-        this.state.set(target);
-      } else {
-        // call transition actions
-        this.action(transition.actions);
-      }
-    });
-  };
-
-  private action = (keys: ActionsOrFn<T> | undefined) => {
+  private action(keys: ActionsOrFn<T> | undefined) {
     const strs = isFunction(keys) ? keys(this.getParams()) : keys;
     if (!strs) return;
     const fns = strs.map((s) => {
@@ -248,14 +135,14 @@ export class VanillaMachine<T extends MachineSchema> {
     for (const fn of fns) {
       fn?.(this.getParams());
     }
-  };
+  }
 
-  private guard = (str: T["guard"] | GuardFn<T>) => {
+  private guard(str: T["guard"] | GuardFn<T>) {
     if (isFunction(str)) return str(this.getParams());
     return this.machine.implementations?.guards?.[str](this.getParams());
-  };
+  }
 
-  private effect = (keys: EffectsOrFn<T> | undefined) => {
+  private effect(keys: EffectsOrFn<T> | undefined) {
     const strs = isFunction(keys) ? keys(this.getParams()) : keys;
     if (!strs) return;
     const fns = strs.map((s) => {
@@ -273,96 +160,111 @@ export class VanillaMachine<T extends MachineSchema> {
       if (cleanup) cleanups.push(cleanup);
     }
     return () => cleanups.forEach((fn) => fn?.());
-  };
-
-  private choose: ChooseFn<T> = (transitions) => {
-    return toArray(transitions).find((t: any) => {
+  }
+  private choose: ChooseFn<T> = (transitions) =>
+    toArray(transitions).find((t) => {
       let result = !t.guard;
       if (isString(t.guard)) result = !!this.guard(t.guard);
       else if (isFunction(t.guard)) result = t.guard(this.getParams());
       return result;
     });
-  };
 
-  start() {
-    this.status = MachineStatus.Started;
-    this.debug("initializing...");
-    this.state.invoke(this.state.initial!, INIT_STATE);
-    this.setupTrackers();
-  }
-
-  stop() {
-    // run exit effects
-    this.effects.forEach((fn) => fn?.());
-    this.effects.clear();
-    this.transition = null;
-    this.action(this.machine.exit);
-
-    // unsubscribe from all subscriptions
-    this.cleanups.forEach((unsub) => unsub());
-    this.cleanups = [];
-
-    this.status = MachineStatus.Stopped;
-    this.debug("unmounting...");
-  }
-
-  subscribe = (fn: (service: Service<T>) => void) => {
-    this.subscriptions.push(fn);
-  };
-
-  private status = MachineStatus.NotStarted;
-
-  get service(): Service<T> {
-    return {
-      state: this.getState(),
-      send: this.send,
+  private computed: ComputedFn<T> = (key) => {
+    ensure(
+      this.machine.computed,
+      () => `[zag-js] No computed object found on machine`,
+    );
+    const fn = this.machine.computed[key];
+    return fn({
       context: this.ctx,
-      prop: this.prop,
-      scope: this.scope,
-      refs: this.refs,
-      computed: this.computed,
       event: this.getEvent(),
-      getStatus: () => this.status,
-    };
-  }
-
-  private publish = () => {
-    this.callTrackers();
-    this.subscriptions.forEach((fn) => fn(this.service));
-  };
-
-  private trackers: { deps: any[]; fn: any }[] = [];
-
-  private setupTrackers = () => {
-    this.machine.watch?.(this.getParams());
-  };
-
-  private callTrackers = () => {
-    this.trackers.forEach(({ deps, fn }) => {
-      const next = deps.map((dep) => dep());
-      if (!isEqual(fn.prev, next)) {
-        fn();
-        fn.prev = next;
-      }
+      prop: this.prop,
+      refs: this.refs,
+      scope: this.scope,
+      computed: this.computed,
     });
   };
 
-  getParams = (): Params<T> => ({
-    state: this.getState(),
-    context: this.ctx,
-    event: this.getEvent(),
-    prop: this.prop,
-    send: this.send,
-    action: this.action,
-    guard: this.guard,
-    track: (deps: any[], fn: any) => {
-      fn.prev = deps.map((dep) => dep());
-      this.trackers.push({ deps, fn });
+  private state = bindable(() => ({
+    defaultValue: this.machine.initialState({ prop: this.prop }),
+    onChange: (nextState, prevState) => {
+      // compute effects: exit -> transition -> enter
+
+      // exit effects
+      if (prevState) {
+        const exitEffects = this.effects.get(prevState);
+        exitEffects?.();
+        this.effects.delete(prevState);
+      }
+
+      // exit actions
+      if (prevState) {
+        this.action(this.machine.states[prevState]?.exit);
+      }
+
+      // transition actions
+      this.action(this.transition?.actions);
+
+      // enter effect
+      const cleanup = this.effect(this.machine.states[nextState]?.effects);
+      if (cleanup) this.effects.set(nextState as string, cleanup);
+
+      // root entry actions
+      if (prevState === INIT_STATE) {
+        this.action(this.machine.entry);
+        const cleanup = this.effect(this.machine.effects);
+        if (cleanup) this.effects.set(INIT_STATE, cleanup);
+      }
+
+      // enter actions
+      this.action(this.machine.states[nextState]?.entry);
     },
-    refs: this.refs,
-    computed: this.computed,
-    flush: identity,
-    scope: this.scope,
-    choose: this.choose,
-  });
+  }));
+
+  private status = MachineStatus.NotStarted;
+
+  private init() {
+    this.status = MachineStatus.Started;
+    this.debug("initializing...");
+    this.state.invoke(this.state.initial!, INIT_STATE);
+    this.machine.watch?.(this.getParams());
+  }
+
+  private send(event: any) {
+    if (this.status !== MachineStatus.Started) return;
+
+    this.previousEvent = this.event;
+    this.event = event;
+
+    this.debug("send", event);
+
+    const currentState = this.state.get();
+
+    const transitions =
+      // @ts-ignore
+      this.machine.states[currentState].on?.[event.type] ??
+        // @ts-ignore
+        this.machine.on?.[event.type];
+
+    const transition = this.choose(transitions);
+    if (!transition) return;
+
+    // save current transition
+    this.transition = transition;
+    const target = transition.target ?? currentState;
+
+    this.debug("transition", transition);
+
+    const changed = target !== currentState;
+    if (changed) {
+      // state change is high priority
+      this.state.set(target);
+    } else if (transition.reenter && !changed) {
+      // reenter will re-invoke the current state
+      this.state.invoke(currentState, currentState);
+    } else {
+      // call transition actions
+      this.action(transition.actions);
+    }
+  }
 }
