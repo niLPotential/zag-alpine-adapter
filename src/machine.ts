@@ -126,7 +126,9 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     send: this.send,
     action: this.action,
     guard: this.guard,
-    track: (deps: any[], effect: VoidFunction) => {},
+    track: (deps: any[], effect: VoidFunction) => {
+      console.log("track:", deps, effect);
+    },
     refs: this.refs,
     computed: this.computed,
     flush: identity,
@@ -134,7 +136,7 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     choose: this.choose,
   });
 
-  private action(keys: ActionsOrFn<T> | undefined) {
+  private action = (keys: ActionsOrFn<T> | undefined) => {
     const strs = isFunction(keys) ? keys(this.getParams()) : keys;
     if (!strs) return;
     const fns = strs.map((s) => {
@@ -149,12 +151,12 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     for (const fn of fns) {
       fn?.(this.getParams());
     }
-  }
+  };
 
-  private guard(str: T["guard"] | GuardFn<T>) {
+  private guard = (str: T["guard"] | GuardFn<T>) => {
     if (isFunction(str)) return str(this.getParams());
     return this.machine.implementations?.guards?.[str](this.getParams());
-  }
+  };
 
   private effect(keys: EffectsOrFn<T> | undefined) {
     const strs = isFunction(keys) ? keys(this.getParams()) : keys;
@@ -244,7 +246,7 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     this.machine.watch?.(this.getParams());
   }
 
-  send(event: any) {
+  send = (event: any) => {
     if (this.status !== MachineStatus.Started) return;
 
     this.previousEvent = this._event;
@@ -280,5 +282,5 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
       // call transition actions
       this.action(transition.actions);
     }
-  }
+  };
 }
