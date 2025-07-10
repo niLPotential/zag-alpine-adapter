@@ -15,7 +15,9 @@ class Accordion {
       dir: "ltr",
     });
     this.api = accordion.connect(this.service, normalizeProps);
-    this.init = this.service.init;
+    this.init = () => {
+      this.service.init();
+    };
   }
 }
 
