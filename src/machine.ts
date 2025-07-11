@@ -40,7 +40,22 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     return this.status;
   }
 
-  private ctx: BindableContext<T>;
+  private _context: any;
+  private ctx: BindableContext<T> = {
+    get: (key) => {
+      return this._context[key].get();
+    },
+    set: (key, value) => {
+      this._context[key].set(value);
+    },
+    initial: (key) => {
+      return this._context[key].initial;
+    },
+    hash: (key) => {
+      const current = this._context[key].get();
+      return this._context[key].hash(current);
+    },
+  };
   refs: BindableRefs<T>;
 
   private effects = new Map<string, VoidFunction>();
@@ -53,7 +68,7 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     private machine: Machine<T>,
     private userProps: Partial<T["props"]>,
   ) {
-    const context: any = this.machine.context?.({
+    const _context: any = this.machine.context?.({
       prop: this.prop,
       bindable,
       scope: this.scope,
@@ -63,23 +78,7 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
       getRefs: () => this.refs,
       getEvent: this.getEvent.bind(this),
     });
-
-    const ctx: BindableContext<T> = {
-      get(key) {
-        return context[key].get();
-      },
-      set(key, value) {
-        context[key].set(value);
-      },
-      initial(key) {
-        return context[key].initial;
-      },
-      hash(key) {
-        const current = context[key].get();
-        return context[key].hash(current);
-      },
-    };
-    this.ctx = ctx;
+    this._context = _context;
 
     this.refs = createRefs(
       this.machine.refs?.({ prop: this.prop, context: this.ctx }) ?? {},
