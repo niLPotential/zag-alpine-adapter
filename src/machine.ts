@@ -296,7 +296,7 @@ export function useMachine<T extends MachineSchema>(
 }
 
 const flush = (fn: VoidFunction) => {
-  Alpine.$nextTick(() => {
+  Alpine.nextTick(() => {
     fn();
   });
 };
