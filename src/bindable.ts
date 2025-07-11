@@ -1,6 +1,5 @@
 import type { Bindable, BindableParams } from "@zag-js/core";
 import { isFunction } from "@zag-js/utils";
-import Alpine from "alpinejs";
 
 export function bindable<T>(props: () => BindableParams<T>): Bindable<T> {
   const initial = props().value ?? props().defaultValue;
@@ -13,7 +12,7 @@ export function bindable<T>(props: () => BindableParams<T>): Bindable<T> {
 
   const store = { value: initial as T };
 
-  const controlled = Alpine.reactive({ value: props().value !== undefined });
+  const controlled = { value: props().value !== undefined };
 
   return {
     initial,

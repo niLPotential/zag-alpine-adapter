@@ -33,22 +33,18 @@ export function useMachine<T extends MachineSchema>(
   userProps: Partial<T["props"]> = {},
 ): Service<T> & { init: () => void } {
   const { id, ids, getRootNode } = userProps as any;
-  const scope = Alpine.reactive(createScope({ id, ids, getRootNode }));
+  const scope = createScope({ id, ids, getRootNode });
 
   const debug = (...args: any[]) => {
     if (machine.debug) console.log(...args);
   };
 
-  const props = Alpine.reactive(
-    machine.props?.({
-      props: compact(userProps),
-      get scope() {
-        return scope.value;
-      },
-    }) ?? userProps,
-  );
+  const props = machine.props?.({
+    props: compact(userProps),
+    scope,
+  }) ?? userProps;
 
-  const prop: PropFn<T> = (key) => props[key];
+  const prop: PropFn<T> = (key) => props[key] as any;
 
   const context: any = machine.context?.({
     prop,
