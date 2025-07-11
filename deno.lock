@@ -8,6 +8,7 @@
     "npm:@zag-js/types@^1.18.3": "1.18.3",
     "npm:@zag-js/utils@^1.18.3": "1.18.3",
     "npm:alpinejs@^3.14.9": "3.14.9",
+    "npm:vite@7.0.4": "7.0.4_picomatch@4.0.2",
     "npm:vite@^7.0.4": "7.0.4_picomatch@4.0.2"
   },
   "npm": {
