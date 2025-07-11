@@ -31,7 +31,7 @@ import { useTrack } from "./track.ts";
 export function useMachine<T extends MachineSchema>(
   machine: Machine<T>,
   userProps: Partial<T["props"]> = {},
-): Service<T> {
+): Service<T> & { init: () => void } {
   const { id, ids, getRootNode } = userProps as any;
   const scope = Alpine.reactive(createScope({ id, ids, getRootNode }));
 
@@ -236,12 +236,12 @@ export function useMachine<T extends MachineSchema>(
 
   let status = MachineStatus.NotStarted;
 
-  Alpine.init(() => {
+  const init = () => {
     status = MachineStatus.Started;
     debug("initializing...");
     state.invoke(state.initial!, INIT_STATE);
     machine.watch?.(getParams());
-  });
+  };
 
   const send = (_event: any) => {
     if (status !== MachineStatus.Started) return;
@@ -291,6 +291,7 @@ export function useMachine<T extends MachineSchema>(
     computed,
     event: getEvent(),
     getStatus: () => status,
+    init,
   };
 }
 
