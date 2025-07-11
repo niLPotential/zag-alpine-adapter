@@ -1,5 +1,5 @@
 import type { Bindable, BindableParams } from "@zag-js/core";
-import { proxy } from "@zag-js/store";
+// import { proxy } from "@zag-js/store";
 import { isFunction } from "@zag-js/utils";
 
 export function bindable<T>(props: () => BindableParams<T>): Bindable<T> {
@@ -11,7 +11,7 @@ export function bindable<T>(props: () => BindableParams<T>): Bindable<T> {
 
   const eq = props().isEqual ?? Object.is;
 
-  const store = proxy({ value: initial as T });
+  const store = { value: initial as T };
 
   const controlled = () => props().value !== undefined;
 
