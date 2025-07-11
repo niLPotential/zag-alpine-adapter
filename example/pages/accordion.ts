@@ -22,9 +22,12 @@ Alpine.data("accordion", () => {
 });
 
 Alpine.data("test", () => {
-  const data = {
+  const data = Alpine.reactive({
     value: 0,
-  };
+  });
+  Alpine.effect(() => {
+    console.log(data.value);
+  });
   const api = {
     ["@click"]() {
       data.value++;
