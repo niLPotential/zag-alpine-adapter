@@ -5,14 +5,20 @@ import { normalizeProps, useMachine } from "../../src/mod.ts";
 // @ts-ignore
 globalThis.Alpine = Alpine;
 
-Alpine.data("accordion", () => ({
-  service: useMachine(accordion.machine, {
+Alpine.data("accordion", () => {
+  const service = Alpine.reactive(useMachine(accordion.machine, {
     id: "1",
     dir: "ltr",
-  }),
-  get api() {
-    return accordion.connect(this.service, normalizeProps);
-  },
-}));
+  }));
+  return {
+    api: accordion.connect(service, normalizeProps),
+    init() {
+      service.init();
+      Alpine.effect(() => {
+        this.api = accordion.connect(service, normalizeProps);
+      });
+    },
+  };
+});
 
 Alpine.start();
