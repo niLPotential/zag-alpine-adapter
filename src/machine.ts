@@ -23,123 +23,119 @@ import {
   toArray,
   warn,
 } from "@zag-js/utils";
+import Alpine from "alpinejs";
 import { bindable } from "./bindable.ts";
 import { createRefs } from "./refs.ts";
+import { useTrack } from "./track.ts";
 
-export class AlpineService<T extends MachineSchema> implements Service<T> {
-  get state() {
-    return this.getState();
-  }
-  get context() {
-    return this.ctx;
-  }
-  get event() {
-    return this.getEvent();
-  }
-  getStatus() {
-    return this.status;
-  }
+export function useMachine<T extends MachineSchema>(
+  machine: Machine<T>,
+  userProps: Partial<T["props"]> = {},
+): Service<T> {
+  const { id, ids, getRootNode } = userProps as any;
+  const scope = Alpine.reactive(createScope({ id, ids, getRootNode }));
 
-  private _context: any;
-  private ctx: BindableContext<T> = {
-    get: (key) => {
-      return this._context[key].get();
+  const debug = (...args: any[]) => {
+    if (machine.debug) console.log(...args);
+  };
+
+  const props = Alpine.reactive(
+    machine.props?.({
+      props: compact(userProps),
+      get scope() {
+        return scope.value;
+      },
+    }) ?? userProps,
+  );
+
+  const prop: PropFn<T> = (key) => props[key];
+
+  const context: any = machine.context?.({
+    prop,
+    bindable,
+    scope,
+    flush: identity,
+    getContext() {
+      return ctx;
     },
-    set: (key, value) => {
-      this._context[key].set(value);
+    getComputed() {
+      return computed;
     },
-    initial: (key) => {
-      return this._context[key].initial;
+    getRefs() {
+      return refs;
     },
-    hash: (key) => {
-      const current = this._context[key].get();
-      return this._context[key].hash(current);
+    getEvent() {
+      return getEvent();
+    },
+  });
+
+  const ctx: BindableContext<T> = {
+    get(key) {
+      return context[key]?.get();
+    },
+    set(key, value) {
+      context[key]?.set(value);
+    },
+    initial(key) {
+      return context[key]?.initial;
+    },
+    hash(key) {
+      const current = context[key]?.get();
+      return context[key]?.hash(current);
     },
   };
-  refs: BindableRefs<T>;
 
-  private effects = new Map<string, VoidFunction>();
-  private transition: any = null;
+  const effects = new Map<string, VoidFunction>();
+  let transition: any = null;
 
-  private previousEvent: any;
-  private _event = { type: "" };
+  let previousEvent: any = null;
+  let event: any = { type: "" };
 
-  constructor(
-    private machine: Machine<T>,
-    private userProps: Partial<T["props"]>,
-  ) {
-    const _context: any = this.machine.context?.({
-      prop: this.prop,
-      bindable,
-      scope: this.scope,
-      flush: identity,
-      getContext: () => this.ctx,
-      getComputed: () => this.computed,
-      getRefs: () => this.refs,
-      getEvent: this.getEvent.bind(this),
-    });
-    this._context = _context;
-
-    this.refs = createRefs(
-      this.machine.refs?.({ prop: this.prop, context: this.ctx }) ?? {},
-    );
-  }
-
-  get scope() {
-    const { id, ids, getRootNode } = this.userProps as any;
-    return createScope({ id, ids, getRootNode });
-  }
-
-  private debug(...args: any[]) {
-    if (this.machine.debug) console.log(...args);
-  }
-
-  private get props() {
-    return this.machine.props?.({
-      props: compact(this.userProps),
-      scope: this.scope,
-    }) ?? this.userProps;
-  }
-  prop: PropFn<T> = (key) => this.props[key] as any;
-
-  private getEvent = () => ({
-    ...this._event,
-    current: () => this._event,
-    previous: () => this.previousEvent,
-  });
-
-  private getState = () => ({
-    ...this._state,
-    matches: (...values: T["state"][]) => values.includes(this._state.get()),
-    hasTag: (tag: T["tag"]) =>
-      !!this.machine.states[this._state.get() as T["state"]]?.tags?.includes(
-        tag,
-      ),
-  });
-
-  private getParams = (): Params<T> => ({
-    state: this.getState(),
-    context: this.ctx,
-    event: this.getEvent(),
-    prop: this.prop,
-    send: this.send,
-    action: this.action,
-    guard: this.guard,
-    track: (deps: any[], effect: VoidFunction) => {
-      console.log("track:", deps, effect);
+  const getEvent = () => ({
+    ...event,
+    current() {
+      return event;
     },
-    refs: this.refs,
-    computed: this.computed,
-    flush: identity,
-    scope: this.scope,
-    choose: this.choose,
+    previous() {
+      return previousEvent;
+    },
   });
 
-  private action = (keys: ActionsOrFn<T> | undefined) => {
-    const strs = isFunction(keys) ? keys(this.getParams()) : keys;
+  const getState = () => ({
+    ...state,
+    matches(...values: T["state"][]) {
+      return values.includes(state.get());
+    },
+    hasTag(tag: T["tag"]) {
+      return !!machine.states[state.get() as T["state"]]?.tags?.includes(tag);
+    },
+  });
+
+  const refs: BindableRefs<T> = createRefs(
+    machine.refs?.({ prop, context: ctx }) ?? {},
+  );
+
+  const getParams = (): Params<T> => ({
+    state: getState(),
+    context: ctx,
+    event: getEvent(),
+    prop,
+    send,
+    action,
+    guard,
+    track: useTrack,
+    refs,
+    computed,
+    flush,
+    scope,
+    choose,
+  });
+
+  const action = (keys: ActionsOrFn<T> | undefined) => {
+    const strs = isFunction(keys) ? keys(getParams()) : keys;
     if (!strs) return;
     const fns = strs.map((s) => {
-      const fn = this.machine.implementations?.actions?.[s];
+      const fn = machine.implementations?.actions?.[s];
       if (!fn) {
         warn(
           `[zag-js] No implementation found for action "${JSON.stringify(s)}"`,
@@ -148,20 +144,20 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
       return fn;
     });
     for (const fn of fns) {
-      fn?.(this.getParams());
+      fn?.(getParams());
     }
   };
 
-  private guard = (str: T["guard"] | GuardFn<T>) => {
-    if (isFunction(str)) return str(this.getParams());
-    return this.machine.implementations?.guards?.[str](this.getParams());
+  const guard = (str: T["guard"] | GuardFn<T>) => {
+    if (isFunction(str)) return str(getParams());
+    return machine.implementations?.guards?.[str](getParams());
   };
 
-  private effect(keys: EffectsOrFn<T> | undefined) {
-    const strs = isFunction(keys) ? keys(this.getParams()) : keys;
+  const effect = (keys: EffectsOrFn<T> | undefined) => {
+    const strs = isFunction(keys) ? keys(getParams()) : keys;
     if (!strs) return;
     const fns = strs.map((s) => {
-      const fn = this.machine.implementations?.effects?.[s];
+      const fn = machine.implementations?.effects?.[s];
       if (!fn) {
         warn(
           `[zag-js] No implementation found for effect "${JSON.stringify(s)}"`,
@@ -171,116 +167,135 @@ export class AlpineService<T extends MachineSchema> implements Service<T> {
     });
     const cleanups: VoidFunction[] = [];
     for (const fn of fns) {
-      const cleanup = fn?.(this.getParams());
+      const cleanup = fn?.(getParams());
       if (cleanup) cleanups.push(cleanup);
     }
     return () => cleanups.forEach((fn) => fn?.());
-  }
+  };
 
-  private choose: ChooseFn<T> = (transitions) =>
-    toArray(transitions).find((t) => {
+  const choose: ChooseFn<T> = (transitions) => {
+    return toArray(transitions).find((t) => {
       let result = !t.guard;
-      if (isString(t.guard)) result = !!this.guard(t.guard);
-      else if (isFunction(t.guard)) result = t.guard(this.getParams());
+      if (isString(t.guard)) result = !!guard(t.guard);
+      else if (isFunction(t.guard)) result = t.guard(getParams());
       return result;
-    });
-
-  computed: ComputedFn<T> = (key) => {
-    ensure(
-      this.machine.computed,
-      () => `[zag-js] No computed object found on machine`,
-    );
-    const fn = this.machine.computed[key];
-    return fn({
-      context: this.ctx,
-      event: this.getEvent(),
-      prop: this.prop,
-      refs: this.refs,
-      scope: this.scope,
-      computed: this.computed,
     });
   };
 
-  private _state = bindable(() => ({
-    defaultValue: this.machine.initialState({ prop: this.prop }),
-    onChange: (nextState, prevState) => {
+  const computed: ComputedFn<T> = (key) => {
+    ensure(
+      machine.computed,
+      () => `[zag-js] No computed object found on machine`,
+    );
+    const fn = machine.computed[key];
+    return fn({
+      context: ctx as any,
+      event: getEvent(),
+      prop,
+      refs,
+      scope,
+      computed,
+    });
+  };
+
+  const state = bindable(() => ({
+    defaultValue: machine.initialState({ prop }),
+    onChange(nextState, prevState) {
       // compute effects: exit -> transition -> enter
 
       // exit effects
       if (prevState) {
-        const exitEffects = this.effects.get(prevState);
+        const exitEffects = effects.get(prevState);
         exitEffects?.();
-        this.effects.delete(prevState);
+        effects.delete(prevState);
       }
 
       // exit actions
       if (prevState) {
-        this.action(this.machine.states[prevState]?.exit);
+        action(machine.states[prevState]?.exit);
       }
 
       // transition actions
-      this.action(this.transition?.actions);
+      action(transition?.actions);
 
       // enter effect
-      const cleanup = this.effect(this.machine.states[nextState]?.effects);
-      if (cleanup) this.effects.set(nextState as string, cleanup);
+      const cleanup = effect(machine.states[nextState]?.effects);
+      if (cleanup) effects.set(nextState as string, cleanup);
 
       // root entry actions
       if (prevState === INIT_STATE) {
-        this.action(this.machine.entry);
-        const cleanup = this.effect(this.machine.effects);
-        if (cleanup) this.effects.set(INIT_STATE, cleanup);
+        action(machine.entry);
+        const cleanup = effect(machine.effects);
+        if (cleanup) effects.set(INIT_STATE, cleanup);
       }
 
       // enter actions
-      this.action(this.machine.states[nextState]?.entry);
+      action(machine.states[nextState]?.entry);
     },
   }));
 
-  private status = MachineStatus.NotStarted;
+  let status = MachineStatus.NotStarted;
 
-  init() {
-    this.status = MachineStatus.Started;
-    this.debug("initializing...");
-    this._state.invoke(this._state.initial!, INIT_STATE);
-    this.machine.watch?.(this.getParams());
-  }
+  Alpine.init(() => {
+    status = MachineStatus.Started;
+    debug("initializing...");
+    state.invoke(state.initial!, INIT_STATE);
+    machine.watch?.(getParams());
+  });
 
-  send = (event: any) => {
-    if (this.status !== MachineStatus.Started) return;
+  const send = (_event: any) => {
+    if (status !== MachineStatus.Started) return;
 
-    this.previousEvent = this._event;
-    this._event = event;
+    previousEvent = event;
+    event = _event;
 
-    this.debug("send", event);
+    debug("send", _event);
 
-    const currentState = this._state.get();
+    const currentState = state.get();
 
     const transitions =
       // @ts-ignore
-      this.machine.states[currentState].on?.[event.type] ??
+      machine.states[currentState].on?.[_event.type] ??
         // @ts-ignore
-        this.machine.on?.[event.type];
+        machine.on?.[_event.type];
 
-    const transition = this.choose(transitions);
-    if (!transition) return;
+    const _transition = choose(transitions);
+    if (!_transition) return;
 
     // save current transition
-    this.transition = transition;
-    const target = transition.target ?? currentState;
+    transition = _transition;
+    const target = _transition.target ?? currentState;
 
-    this.debug("transition", transition);
+    debug("transition", _transition);
 
     const changed = target !== currentState;
     if (changed) {
       // state change is high priority
-      this._state.set(target);
-    } else if (transition.reenter && !changed) {
+      state.set(target);
+    } else if (_transition.reenter && !changed) {
       // reenter will re-invoke the current state
-      this._state.invoke(currentState, currentState);
+      state.invoke(currentState, currentState);
     } else {
       // call transition actions
-      this.action(transition.actions);
+      action(_transition.actions);
     }
   };
+
+  return {
+    state: getState(),
+    send,
+    context: ctx,
+    prop,
+    scope,
+    refs,
+    computed,
+    event: getEvent(),
+    getStatus: () => status,
+  };
 }
+
+const flush = (fn: VoidFunction) => {
+  Alpine.$nextTick(() => {
+    fn();
+  });
+};
