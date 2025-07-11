@@ -21,4 +21,20 @@ Alpine.data("accordion", () => {
   };
 });
 
+Alpine.data("test", () => {
+  const data = {
+    value: 0,
+  };
+  const api = {
+    ["@click"]() {
+      data.value++;
+      console.log(data.value);
+    },
+    ["x-text"]() {
+      return data.value;
+    },
+  };
+  return { api };
+});
+
 Alpine.start();
