@@ -46,24 +46,26 @@ export function useMachine<T extends MachineSchema>(
 
   const prop: PropFn<T> = (key) => props[key] as any;
 
-  const context: any = machine.context?.({
-    prop,
-    bindable,
-    scope,
-    flush: identity,
-    getContext() {
-      return ctx;
-    },
-    getComputed() {
-      return computed;
-    },
-    getRefs() {
-      return refs;
-    },
-    getEvent() {
-      return getEvent();
-    },
-  });
+  const context = Alpine.reactive(
+    machine.context?.({
+      prop,
+      bindable,
+      scope,
+      flush: identity,
+      getContext() {
+        return ctx;
+      },
+      getComputed() {
+        return computed;
+      },
+      getRefs() {
+        return refs;
+      },
+      getEvent() {
+        return getEvent();
+      },
+    }),
+  );
 
   const ctx: BindableContext<T> = {
     get(key) {
