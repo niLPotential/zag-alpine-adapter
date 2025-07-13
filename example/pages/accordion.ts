@@ -9,14 +9,14 @@ Alpine.data("accordion", () => {
   const service = useMachine(accordion.machine, {
     id: "1",
     dir: "ltr",
+    multiple: true,
   });
   return {
-    api: accordion.connect(service, normalizeProps),
+    get api() {
+      return accordion.connect(service, normalizeProps);
+    },
     init() {
       service.init();
-      Alpine.effect(() => {
-        this.api = accordion.connect(service, normalizeProps);
-      });
     },
   };
 });
