@@ -39,10 +39,12 @@ export function useMachine<T extends MachineSchema>(
     if (machine.debug) console.log(...args);
   };
 
-  const props = Alpine.reactive(machine.props?.({
-    props: compact(userProps),
-    scope,
-  }) ?? userProps);
+  const props = Alpine.reactive(
+    machine.props?.({
+      props: compact(userProps),
+      scope,
+    }) ?? userProps,
+  );
 
   const prop: PropFn<T> = (key) => props[key] as any;
 
@@ -86,8 +88,8 @@ export function useMachine<T extends MachineSchema>(
   const effects = Alpine.reactive(new Map<string, VoidFunction>());
   let transition: any = null;
 
-  const previousEventRef = Alpine.reactive({current: null});
-  const eventRef= Alpine.reactive({current: { type: "" }});
+  const previousEventRef = Alpine.reactive({ current: null });
+  const eventRef = Alpine.reactive({ current: { type: "" } });
 
   const getEvent = () => ({
     ...eventRef.current,
