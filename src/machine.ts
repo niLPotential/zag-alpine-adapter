@@ -83,7 +83,7 @@ export function useMachine<T extends MachineSchema>(
     },
   };
 
-  const effects = new Map<string, VoidFunction>();
+  const effects = Alpine.reactive(new Map<string, VoidFunction>());
   let transition: any = null;
 
   let previousEvent: any = null;
