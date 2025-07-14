@@ -25,7 +25,7 @@ import {
 } from "@zag-js/utils";
 import Alpine from "alpinejs";
 import { bindable } from "./bindable.ts";
-import { createRefs } from "./refs.ts";
+import { useRefs } from "./refs.ts";
 import { useTrack } from "./track.ts";
 
 export function useMachine<T extends MachineSchema>(
@@ -107,7 +107,7 @@ export function useMachine<T extends MachineSchema>(
     },
   });
 
-  const refs: BindableRefs<T> = createRefs(
+  const refs: BindableRefs<T> = useRefs(
     machine.refs?.({ prop, context: ctx }) ?? {},
   );
 

@@ -1,5 +1,7 @@
-export function createRefs<T>(refs: T) {
-  const ref = { current: refs };
+import Alpine from "alpinejs";
+
+export function useRefs<T>(refs: T) {
+  const ref = Alpine.reactive({ current: refs });
   return {
     get<K extends keyof T>(key: K): T[K] {
       return ref.current[key];
