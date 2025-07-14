@@ -8,13 +8,14 @@
   <body style="padding: 40px">
     <button
       x-data="{value: 1,
-        normalize(value) {
-          return {'x-text': () => value}
+        bind(v) {
+          return {'x-text': () => v}
         }}"
-      x-bind="normalize(value)"
+      x-bind="bind(value)"
       @click="value++"
       x-effect="console.log(value)"
     >
+    value
     </button>
 
     <h1>Accordion</h1>
