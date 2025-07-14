@@ -7,13 +7,13 @@
   </head>
   <body style="padding: 40px">
     <button
-      x-data="{value: 1,
-        bind(v) {
-          return {'x-text': () => v}
+      x-data="{data: {value: 1},
+        normalize(data) {
+          console.log('normalize runs once')
+          return {'x-text': () => data.value}
         }}"
-      x-bind="bind(value)"
-      @click="value++"
-      x-effect="console.log(value)"
+      x-bind="normalize(data)"
+      @click="data.value++"
     >
     value
     </button>
