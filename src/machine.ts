@@ -86,16 +86,16 @@ export function useMachine<T extends MachineSchema>(
   const effects = Alpine.reactive(new Map<string, VoidFunction>());
   let transition: any = null;
 
-  let previousEvent: any = null;
-  let event: any = { type: "" };
+  const previousEventRef = Alpine.reactive({current: null});
+  const eventRef= Alpine.reactive({current: { type: "" }});
 
   const getEvent = () => ({
-    ...event,
+    ...eventRef.current,
     current() {
-      return event;
+      return eventRef.current;
     },
     previous() {
-      return previousEvent;
+      return previousEventRef.current;
     },
   });
 
@@ -244,8 +244,8 @@ export function useMachine<T extends MachineSchema>(
   const send = (_event: any) => {
     if (status !== MachineStatus.Started) return;
 
-    previousEvent = event;
-    event = _event;
+    previousEventRef.current = eventRef.current;
+    eventRef.current = _event;
 
     debug("send", _event);
 
