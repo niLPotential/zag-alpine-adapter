@@ -39,10 +39,10 @@ export function useMachine<T extends MachineSchema>(
     if (machine.debug) console.log(...args);
   };
 
-  const props = machine.props?.({
+  const props = Alpine.reactive(machine.props?.({
     props: compact(userProps),
     scope,
-  }) ?? userProps;
+  }) ?? userProps);
 
   const prop: PropFn<T> = (key) => props[key] as any;
 
