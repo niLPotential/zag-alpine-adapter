@@ -6,6 +6,17 @@
     <title>Vite + TS</title>
   </head>
   <body style="padding: 40px">
+    <button
+      x-data="{value: 1,
+        normalize(value) {
+          return {'x-text': () => value}
+        }}"
+      x-bind="normalize(value)"
+      @click="value++"
+      x-effect="console.log(value)"
+    >
+    </button>
+
     <h1>Accordion</h1>
 
     <div x-data="accordion" x-bind="api.getRootProps()">
