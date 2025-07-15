@@ -3,12 +3,11 @@ import { createNormalizer } from "@zag-js/types";
 export const normalizeProps = createNormalizer((props) => {
   const normalized: Record<string, any> = {};
   for (const key in props) {
-    const value = props[key];
-    if (!value) continue;
+    if (!props[key]) continue;
     if (key.startsWith("on")) {
-      normalized[`@${key.substring(2).toLowerCase()}`] = value;
+      normalized[`@${key.substring(2).toLowerCase()}`] = props[key];
     } else {
-      normalized[":" + key] = () => value;
+      normalized[":" + key] = () => props[key];
     }
   }
   return normalized;
