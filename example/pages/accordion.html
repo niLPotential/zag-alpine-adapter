@@ -13,6 +13,7 @@
     <div x-data="accordion" x-bind="api.getRootProps()">
       <div x-text="JSON.stringify(api.value)"></div>
       <div x-data="{ value: 'a' }" x-bind="api.getItemProps({ value })">
+        <div x-bind="connect.getProps({value})"></div>
         <button x-bind="api.getItemTriggerProps({ value })">
           First Button
         </button>

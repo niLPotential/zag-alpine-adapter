@@ -35,12 +35,30 @@ Alpine.data("accordion", () => {
     dir: "ltr",
     multiple: true,
   });
+  function connect(service, normalize) {
+    const { context } = service;
+    const value = context.get("value");
+    function getItemState(props) {
+      return { expanded: value.includes(props.value) };
+    }
+    return {
+      getProps(props) {
+        const itemState = getItemState(props);
+        return normalize.element({
+          "data-state": itemState.expanded ? "open" : "closed",
+        });
+      },
+    };
+  }
   return {
     get api() {
       return accordion.connect(service, normalizeProps);
     },
     init() {
       service.init();
+    },
+    get connect() {
+      return connect(service, normalizeProps);
     },
   };
 });
