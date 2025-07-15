@@ -43,8 +43,8 @@ Alpine.data("accordion", () => {
       service.init();
     },
     get connect() {
-      const { context } = service;
-      const value = context.get("value");
+      const { context } = service; // context is reactive
+      const value = context.get("value"); // value is not reactive
       const getItemState = (props) => {
         return { expanded: value.includes(props.value) };
       };
