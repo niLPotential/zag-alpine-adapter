@@ -7,11 +7,12 @@ import { createNormalizer } from "@zag-js/types";
 globalThis.Alpine = Alpine;
 
 Alpine.data("counter", () => {
-  const data = Alpine.reactive({ value: 1 });
+  const data = Alpine.reactive({ text: 1 });
   const normalize = createNormalizer((props) => {
     const normalized = {};
-    // const v = props.value; fails
-    normalized["x-text"] = () => props.value; // works
+    for (const key in props) {
+      normalized["x-" + key] = () => props[key];
+    }
     return normalized;
   });
   const connect = (data, normalize) => {
@@ -21,8 +22,8 @@ Alpine.data("counter", () => {
     bind: {
       "x-bind": () => connect(data, normalize),
       "@click": () => {
-        data.value++;
-        console.log(data.value);
+        data.text++;
+        console.log(data.text);
       },
     },
   };
