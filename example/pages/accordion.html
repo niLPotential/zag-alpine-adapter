@@ -6,17 +6,7 @@
     <title>Vite + TS</title>
   </head>
   <body style="padding: 40px">
-    <button
-      x-data="{data: {value: 1},
-        normalize(data) {
-          console.log('normalize runs once')
-          return {'x-text': () => data.value}
-        }}"
-      x-bind="normalize(data)"
-      @click="data.value++"
-    >
-      value
-    </button>
+    <button x-data="counter" x-bind="bind"></button>
 
     <h1>Accordion</h1>
 
